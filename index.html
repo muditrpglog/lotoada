@@ -322,12 +322,93 @@ html, body{
   }
 }
 
+/* 🎵 Sticky wrapper (로그 안 가림) */
+.yt-audio-sticky{
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: min(900px, 92vw);
+  margin: 0 auto 14px;
+  padding-top: 10px;
+  backdrop-filter: blur(8px);
+}
+
+/* 🎵 Audio bar */
+.yt-audio-bar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+}
+
+.yt-audio-title{
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yt-audio-btn{
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-main);
+}
+
+.yt-audio-time{
+  font-variant-numeric: tabular-nums;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+/* 유튜브 iframe 완전 숨김 */
+#yt-hidden-player{
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+  top: -9999px;
+  overflow: hidden;
+}
+
 
 </style></head>
 <body class="is-saved">
 
 <div id="main-wrapper">
     
+<!-- 🎵 Sticky Audio Player (Loop) -->
+<div class="yt-audio-sticky">
+ <div class="yt-audio-bar"
+     data-yt="-CRtY31pULc"
+     data-title="ZENBET">
+
+    <div class="yt-audio-title">ZENBET</div>
+
+    <button type="button"
+            class="yt-audio-btn"
+            data-action="toggle">▶</button>
+
+    <div class="yt-audio-time">
+      <span class="yt-audio-current">00:00</span>
+      /
+      <span class="yt-audio-duration">00:00</span>
+    </div>
+  </div>
+</div>
+
+<!-- 실제 유튜브 플레이어 (완전 숨김) -->
+<div id="yt-hidden-player" aria-hidden="true"></div>
 
     <div id="editor-header">
         <div class="session-card" id="session-card-area" style="cursor: default; border: none;">
@@ -685,4 +766,62 @@ html, body{
   }
 }
 
-</style></div></div><div id="scrnli_recorder_root"></div><div style="all: initial !important"></div></body><link rel="stylesheet" asset="eduser.css" href="chrome-extension://mjdbhokoopacimoekfgkcoogikbfgngb/assets/eduser.css"></html>
+</style></div></div><div id="scrnli_recorder_root"></div><div style="all: initial !important"></div>
+
+<!-- ⭐ 여기부터 붙여넣기 -->
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  function pad2(n){ return String(n).padStart(2,'0'); }
+  function fmtTime(sec){
+    sec = Math.max(0, Math.floor(sec || 0));
+    return `${pad2(Math.floor(sec/60))}:${pad2(sec%60)}`;
+  }
+
+  let player, ui, timer;
+
+  function onYouTubeIframeAPIReady(){
+    ui = {
+      bar: document.querySelector(".yt-audio-bar"),
+      btn: document.querySelector('.yt-audio-btn'),
+      cur: document.querySelector(".yt-audio-current"),
+      dur: document.querySelector(".yt-audio-duration"),
+      title: document.querySelector(".yt-audio-title")
+    };
+    if(!ui.bar) return;
+
+    const videoId = ui.bar.dataset.yt;
+    ui.title.textContent = ui.bar.dataset.title || "BGM";
+
+    player = new YT.Player("yt-hidden-player", {
+      videoId,
+      playerVars: {
+        controls: 0,
+        rel: 0,
+        modestbranding: 1,
+        loop: 1,
+        playlist: videoId
+      },
+      events: {
+        onReady: () => {
+          timer = setInterval(() => {
+            ui.cur.textContent = fmtTime(player.getCurrentTime());
+            ui.dur.textContent = fmtTime(player.getDuration());
+          }, 500);
+        },
+        onStateChange: e => {
+          ui.btn.textContent =
+            e.data === YT.PlayerState.PLAYING ? "⏸" : "▶";
+        }
+      }
+    });
+
+    ui.btn.addEventListener("click", () => {
+      const s = player.getPlayerState();
+      if(s === YT.PlayerState.PLAYING) player.pauseVideo();
+      else player.playVideo();
+    });
+  }
+</script>
+<!-- ⭐ 여기까지 -->
+	
+</body></html>
